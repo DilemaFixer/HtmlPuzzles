@@ -1,5 +1,6 @@
 package main
 
+<<<<<<< Updated upstream
 import (
 	"fmt"
 	"strings"
@@ -141,4 +142,29 @@ func findElementByTag(n *html.Node, tagName string) *html.Node {
 	}
 
 	return nil
+=======
+<<<<<<< Updated upstream
+import "fmt"
+
+func main() {
+	fmt.Println("Hello World!")
+=======
+import (
+	html "github.com/DilemaFixer/HtmlPuzzles/htmlparser"
+)
+
+func main() {
+	root, err := html.ParseHtml(`
+<div class="container">
+    <h1>Hello World</h1>
+    <p id="text">Some content</p>
+    <img src="image.jpg" alt="Image"/>
+</div>
+`)
+
+	if err == nil {
+		html.PrintHtmlTree(root)
+	}
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 }

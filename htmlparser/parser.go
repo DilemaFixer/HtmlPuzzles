@@ -1,0 +1,261 @@
+package htmlparser
+
+import (
+	"fmt"
+	"strings"
+)
+
+type HtmlTag struct {
+	Name          string
+	InnerHtml     string
+	InnerContent  string
+	IsSelfClosing bool
+	Attributes    []HtmlAttribute
+	Parent        *HtmlTag
+	Children      []*HtmlTag
+}
+
+type HtmlAttribute struct {
+	Name         string
+	Value        string
+	IsValueExist bool
+}
+
+func ParseHtml(html string) (*HtmlTag, error) {
+	scanner := NewScanner(html)
+	closeStack := NewStack[string]()
+	var root *HtmlTag = nil
+	var current *HtmlTag = nil
+
+	for !scanner.EOF() {
+		scanner.SkipWhitespace()
+
+		if scanner.EOF() {
+			break
+		}
+
+		if scanner.ch == '<' {
+			if scanner.PeekNext() == '/' {
+				if closeStack.IsEmpty() {
+					return nil, fmt.Errorf("Html parsing error: superfluous closing tag at %s", scanner.Location())
+				}
+
+				closingTag, err := parseClosingTag(scanner)
+				if err != nil {
+					return nil, err
+				}
+
+				expected, ok := closeStack.Pop()
+				if !ok || expected != closingTag {
+					return nil, fmt.Errorf("Html parsing error: invalid closing tag '%s', expected '%s' at %s", closingTag, expected, scanner.Location())
+				}
+
+				if current != nil {
+				}
+
+				if current.Parent == nil {
+					return root, nil
+				}
+
+				current = current.Parent
+				continue
+			}
+
+			tag, err := parsingOpenTag(scanner)
+			if err != nil {
+				return nil, err
+			}
+
+			if root == nil {
+				root = tag
+				current = tag
+			} else {
+				tag.Parent = current
+				current.Children = append(current.Children, tag)
+				if !tag.IsSelfClosing {
+					current = tag
+				}
+			}
+
+			if !tag.IsSelfClosing {
+				closeStack.Push(tag.Name)
+			}
+
+		} else {
+			contentStart := scanner.Position()
+			scanner.ConsumeUntil(func(r rune) bool { return r == '<' })
+			content := strings.TrimSpace(scanner.SliceFrom(contentStart))
+
+			if content != "" && current != nil {
+				current.InnerContent += content
+			}
+		}
+	}
+
+	if !closeStack.IsEmpty() {
+		unclosed, _ := closeStack.Pop()
+		return nil, fmt.Errorf("Html parsing error: unclosed tag '%s'", unclosed)
+	}
+
+	return root, nil
+}
+
+func parseClosingTag(scanner *Scanner) (string, error) {
+	if !scanner.Match('<') {
+		return "", fmt.Errorf("expected '<' at %s", scanner.Location())
+	}
+
+	if !scanner.Match('/') {
+		return "", fmt.Errorf("expected '/' at %s", scanner.Location())
+	}
+
+	scanner.SkipWhitespace()
+
+	tagName := scanner.ConsumeWhile(func(r rune) bool {
+		return r != '>' && r != ' ' && r != '\t' && r != '\n' && r != '\r'
+	})
+
+	if tagName == "" {
+		return "", fmt.Errorf("empty tag name at %s", scanner.Location())
+	}
+
+	scanner.SkipWhitespace()
+
+	if !scanner.Match('>') {
+		return "", fmt.Errorf("expected '>' at %s", scanner.Location())
+	}
+
+	return tagName, nil
+}
+
+func parsingOpenTag(scanner *Scanner) (*HtmlTag, error) {
+	if !scanner.Match('<') {
+		return nil, fmt.Errorf("expected '<' at %s", scanner.Location())
+	}
+
+	scanner.SkipWhitespace()
+
+	tagName := scanner.ConsumeWhile(func(r rune) bool {
+		return r != '>' && r != '/' && r != ' ' && r != '\t' && r != '\n' && r != '\r'
+	})
+
+	if tagName == "" {
+		return nil, fmt.Errorf("empty tag name at %s", scanner.Location())
+	}
+
+	tag := &HtmlTag{
+		Name:       tagName,
+		Attributes: make([]HtmlAttribute, 0),
+		Children:   make([]*HtmlTag, 0),
+	}
+
+	scanner.SkipWhitespace()
+
+	for !scanner.EOF() && scanner.ch != '>' && scanner.ch != '/' {
+		attr, err := parseAttribute(scanner)
+		if err != nil {
+			return nil, err
+		}
+		tag.Attributes = append(tag.Attributes, attr)
+		scanner.SkipWhitespace()
+	}
+
+	if scanner.ch == '/' {
+		scanner.Take()
+		tag.IsSelfClosing = true
+	}
+
+	if !scanner.Match('>') {
+		return nil, fmt.Errorf("expected '>' at %s", scanner.Location())
+	}
+
+	return tag, nil
+}
+
+func parseAttribute(scanner *Scanner) (HtmlAttribute, error) {
+	scanner.SkipWhitespace()
+
+	attrName := scanner.ConsumeWhile(func(r rune) bool {
+		return r != '=' && r != '>' && r != '/' && r != ' ' && r != '\t' && r != '\n' && r != '\r'
+	})
+
+	if attrName == "" {
+		return HtmlAttribute{}, fmt.Errorf("empty attribute name at %s", scanner.Location())
+	}
+
+	attr := HtmlAttribute{
+		Name:         attrName,
+		IsValueExist: false,
+	}
+
+	scanner.SkipWhitespace()
+
+	if scanner.ch == '=' {
+		scanner.Take()
+		scanner.SkipWhitespace()
+
+		attr.IsValueExist = true
+
+		if scanner.ch == '"' || scanner.ch == '\'' {
+			quote := scanner.ch
+			scanner.Take()
+
+			valueStart := scanner.Position()
+			scanner.ConsumeUntil(func(r rune) bool { return r == quote })
+			attr.Value = scanner.SliceFrom(valueStart)
+
+			if !scanner.Match(quote) {
+				return HtmlAttribute{}, fmt.Errorf("unclosed attribute value at %s", scanner.Location())
+			}
+		} else {
+			attr.Value = scanner.ConsumeWhile(func(r rune) bool {
+				return r != ' ' && r != '\t' && r != '\n' && r != '\r' && r != '>' && r != '/'
+			})
+		}
+	}
+
+	return attr, nil
+}
+
+func PrintHtmlTree(tag *HtmlTag) {
+	printHtmlTreeRecursive(tag, 0)
+}
+
+func printHtmlTreeRecursive(tag *HtmlTag, depth int) {
+	if tag == nil {
+		return
+	}
+
+	indent := strings.Repeat("  ", depth)
+
+	fmt.Printf("%s<%s", indent, tag.Name)
+
+	for _, attr := range tag.Attributes {
+		if attr.IsValueExist {
+			fmt.Printf(" %s=\"%s\"", attr.Name, attr.Value)
+		} else {
+			fmt.Printf(" %s", attr.Name)
+		}
+	}
+
+	if tag.IsSelfClosing {
+		fmt.Printf("/>\n")
+		return
+	}
+
+	fmt.Printf(">")
+
+	if tag.InnerContent != "" {
+		fmt.Printf("%s", tag.InnerContent)
+	}
+
+	if len(tag.Children) > 0 {
+		fmt.Printf("\n")
+		for _, child := range tag.Children {
+			printHtmlTreeRecursive(child, depth+1)
+		}
+		fmt.Printf("%s", indent)
+	}
+
+	fmt.Printf("</%s>\n", tag.Name)
+}
