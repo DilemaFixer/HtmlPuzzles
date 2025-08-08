@@ -4,11 +4,7 @@ type Stack[T any] struct {
 	items []T
 }
 
-<<<<<<< Updated upstream
-func New[T any]() *Stack[T] {
-=======
 func NewStack[T any]() *Stack[T] {
->>>>>>> Stashed changes
 	return &Stack[T]{items: make([]T, 0)}
 }
 
