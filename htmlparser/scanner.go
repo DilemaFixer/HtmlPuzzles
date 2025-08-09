@@ -1,25 +1,37 @@
 package htmlparser
 
+import (
+	"fmt"
+)
+
 type Scanner struct {
 	input    string
 	position int
 	line     int
 	column   int
+	ch       rune
 }
 
 func NewScanner(input string) *Scanner {
-	return &Scanner{
+	s := &Scanner{
 		input:  input,
 		line:   1,
 		column: 1,
 	}
+	s.updateCh()
+	return s
+}
+
+func (s *Scanner) updateCh() {
+	if s.position >= len(s.input) {
+		s.ch = 0
+	} else {
+		s.ch = rune(s.input[s.position])
+	}
 }
 
 func (s *Scanner) Current() rune {
-	if s.position >= len(s.input) {
-		return 0
-	}
-	return rune(s.input[s.position])
+	return s.ch
 }
 
 func (s *Scanner) PeekNext() rune {
@@ -41,7 +53,7 @@ func (s *Scanner) Take() rune {
 		return 0
 	}
 
-	current := s.Current()
+	current := s.ch
 	s.position++
 
 	if current == '\n' {
@@ -51,6 +63,7 @@ func (s *Scanner) Take() rune {
 		s.column++
 	}
 
+	s.updateCh()
 	return current
 }
 
@@ -60,19 +73,19 @@ func (s *Scanner) Retreat() rune {
 	}
 
 	s.position--
-	current := s.Current()
+	s.updateCh()
 
-	if current == '\n' {
+	if s.ch == '\n' {
 		s.line--
-		s.column = s.columnAt(s.position)
+		s.column = s.ColumnAt(s.position)
 	} else {
 		s.column--
 	}
 
-	return current
+	return s.ch
 }
 
-func (s *Scanner) columnAt(pos int) int {
+func (s *Scanner) ColumnAt(pos int) int {
 	col := 1
 	for i := pos - 1; i >= 0 && s.input[i] != '\n'; i-- {
 		col++
@@ -135,6 +148,8 @@ func (s *Scanner) Reset(mark int) {
 			s.column++
 		}
 	}
+
+	s.updateCh()
 }
 
 func (s *Scanner) Slice(start, end int) string {
@@ -149,7 +164,7 @@ func (s *Scanner) SliceFrom(start int) string {
 }
 
 func (s *Scanner) Match(expected rune) bool {
-	if s.Current() == expected {
+	if s.ch == expected {
 		s.Take()
 		return true
 	}
@@ -157,9 +172,8 @@ func (s *Scanner) Match(expected rune) bool {
 }
 
 func (s *Scanner) MatchAny(chars ...rune) bool {
-	current := s.Current()
 	for _, char := range chars {
-		if current == char {
+		if s.ch == char {
 			s.Take()
 			return true
 		}
@@ -183,7 +197,7 @@ func (s *Scanner) MatchString(expected string) bool {
 
 func (s *Scanner) ConsumeWhile(predicate func(rune) bool) string {
 	start := s.position
-	for !s.EOF() && predicate(s.Current()) {
+	for !s.EOF() && predicate(s.ch) {
 		s.Take()
 	}
 	return s.input[start:s.position]
@@ -191,7 +205,7 @@ func (s *Scanner) ConsumeWhile(predicate func(rune) bool) string {
 
 func (s *Scanner) ConsumeUntil(predicate func(rune) bool) string {
 	start := s.position
-	for !s.EOF() && !predicate(s.Current()) {
+	for !s.EOF() && !predicate(s.ch) {
 		s.Take()
 	}
 	return s.input[start:s.position]
@@ -207,7 +221,7 @@ func (s *Scanner) ConsumeN(n int) string {
 
 func (s *Scanner) Find(target rune) bool {
 	for !s.EOF() {
-		if s.Current() == target {
+		if s.ch == target {
 			return true
 		}
 		s.Take()
@@ -232,4 +246,20 @@ func (s *Scanner) Remaining() string {
 
 func (s *Scanner) Len() int {
 	return len(s.input)
+}
+
+func (s *Scanner) Location() string {
+	return fmt.Sprintf("%d:%d", s.line, s.column)
+}
+
+func (s *Scanner) SetLocation(line, column int) {
+	s.line = line
+	s.column = column
+	s.updateCh()
+}
+
+func (s *Scanner) SkipWhitespace() {
+	for !s.EOF() && (s.ch == ' ' || s.ch == '\t' || s.ch == '\n' || s.ch == '\r') {
+		s.Take()
+	}
 }
