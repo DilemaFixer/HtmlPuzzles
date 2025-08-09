@@ -252,6 +252,12 @@ func (s *Scanner) Location() string {
 	return fmt.Sprintf("%d:%d", s.line, s.column)
 }
 
+func (s *Scanner) SetLocation(line, column int) {
+	s.line = line
+	s.column = column
+	s.updateCh()
+}
+
 func (s *Scanner) SkipWhitespace() {
 	for !s.EOF() && (s.ch == ' ' || s.ch == '\t' || s.ch == '\n' || s.ch == '\r') {
 		s.Take()
