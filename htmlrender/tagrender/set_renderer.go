@@ -42,7 +42,7 @@ func (r *SetRenderer) Render(ctx render.Context) (*render.RenderedNode, error) {
 		objPtr = unsafe.Pointer(objValue.UnsafeAddr())
 	}
 
-	fieldPtr, err := handlingPointerOnWay(objPtr, ptrsOffset)
+	fieldPtr, err := handlingPointersOnWay(objPtr, ptrsOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (r *SetRenderer) Render(ctx render.Context) (*render.RenderedNode, error) {
 	}, nil
 }
 
-func handlingPointerOnWay(obj unsafe.Pointer, ptrsOffset []uintptr) (unsafe.Pointer, error) {
+func handlingPointersOnWay(obj unsafe.Pointer, ptrsOffset []uintptr) (unsafe.Pointer, error) {
 	if obj == nil {
 		return nil, fmt.Errorf("obj pointer is nil")
 	}

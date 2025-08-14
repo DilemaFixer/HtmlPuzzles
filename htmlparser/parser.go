@@ -65,7 +65,7 @@ func (parser *HtmlParser) ParseHtml(html string) ([]*HtmlTag, error) {
 			break
 		}
 
-		if scanner.Ch == '<' {
+		if scanner.Current() == '<' {
 			if scanner.PeekNext() == '/' {
 				if closeStack.IsEmpty() {
 					return nil, fmt.Errorf("Html parsing error: superfluous closing tag at %s", scanner.Location())
@@ -188,7 +188,7 @@ func parsingOpenTag(parser *HtmlParser, scanner *tools.Scanner) (*HtmlTag, error
 
 	scanner.SkipWhitespace()
 
-	for !scanner.EOF() && scanner.Ch != '>' && scanner.Ch != '/' {
+	for !scanner.EOF() && scanner.Current() != '>' && scanner.Current() != '/' {
 		attr, err := parseAttribute(scanner)
 		if err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func parsingOpenTag(parser *HtmlParser, scanner *tools.Scanner) (*HtmlTag, error
 		scanner.SkipWhitespace()
 	}
 
-	if scanner.Ch == '/' {
+	if scanner.Current() == '/' {
 		scanner.Take()
 		tag.IsSelfClosing = true
 	}
@@ -229,14 +229,14 @@ func parseAttribute(scanner *tools.Scanner) (HtmlAttribute, error) {
 
 	scanner.SkipWhitespace()
 
-	if scanner.Ch == '=' {
+	if scanner.Current() == '=' {
 		scanner.Take()
 		scanner.SkipWhitespace()
 
 		attr.IsValueExist = true
 
-		if scanner.Ch == '"' || scanner.Ch == '\'' {
-			quote := scanner.Ch
+		if scanner.Current() == '"' || scanner.Current() == '\'' {
+			quote := scanner.Current()
 			scanner.Take()
 
 			valueStart := scanner.Position()
