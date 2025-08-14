@@ -1,7 +1,5 @@
 package tools
 
-import "fmt"
-
 import (
 	"fmt"
 )
@@ -257,7 +255,6 @@ func (s *Scanner) Location() string {
 func (s *Scanner) SetLocation(line, column int) {
 	s.line = line
 	s.column = column
-<<<<<<<< HEAD:htmlparser/scanner.go
 	s.updateCh()
 }
 
@@ -266,16 +263,7 @@ func (s *Scanner) SkipWhitespace() {
 		s.Take()
 	}
 }
-========
-}
-
-func (s *Scanner) SkipWhitespace() {
-	for !s.EOF() && isWhitespace(s.Current()) {
-		s.Take()
-	}
-}
 
 func isWhitespace(ch rune) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
->>>>>>>> dev:tools/scanner.go
