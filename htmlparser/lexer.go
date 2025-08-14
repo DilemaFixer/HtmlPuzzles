@@ -1,10 +1,14 @@
-package htmlparser
+package tools
 
 type Scanner struct {
 	input    string
 	position int
 	line     int
 	column   int
+<<<<<<<< Updated upstream:htmlparser/lexer.go
+========
+	Ch       rune
+>>>>>>>> Stashed changes:tools/scanner.go
 }
 
 func NewScanner(input string) *Scanner {
@@ -13,6 +17,7 @@ func NewScanner(input string) *Scanner {
 		line:   1,
 		column: 1,
 	}
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 }
 
 func (s *Scanner) Current() rune {
@@ -20,6 +25,22 @@ func (s *Scanner) Current() rune {
 		return 0
 	}
 	return rune(s.input[s.position])
+========
+	s.updateCh()
+	return s
+}
+
+func (s *Scanner) updateCh() {
+	if s.position >= len(s.input) {
+		s.Ch = 0
+	} else {
+		s.Ch = rune(s.input[s.position])
+	}
+}
+
+func (s *Scanner) Current() rune {
+	return s.Ch
+>>>>>>>> Stashed changes:tools/scanner.go
 }
 
 func (s *Scanner) PeekNext() rune {
@@ -41,7 +62,11 @@ func (s *Scanner) Take() rune {
 		return 0
 	}
 
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	current := s.Current()
+========
+	current := s.Ch
+>>>>>>>> Stashed changes:tools/scanner.go
 	s.position++
 
 	if current == '\n' {
@@ -62,14 +87,22 @@ func (s *Scanner) Retreat() rune {
 	s.position--
 	current := s.Current()
 
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	if current == '\n' {
+========
+	if s.Ch == '\n' {
+>>>>>>>> Stashed changes:tools/scanner.go
 		s.line--
 		s.column = s.columnAt(s.position)
 	} else {
 		s.column--
 	}
 
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	return current
+========
+	return s.Ch
+>>>>>>>> Stashed changes:tools/scanner.go
 }
 
 func (s *Scanner) columnAt(pos int) int {
@@ -149,7 +182,11 @@ func (s *Scanner) SliceFrom(start int) string {
 }
 
 func (s *Scanner) Match(expected rune) bool {
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	if s.Current() == expected {
+========
+	if s.Ch == expected {
+>>>>>>>> Stashed changes:tools/scanner.go
 		s.Take()
 		return true
 	}
@@ -159,7 +196,11 @@ func (s *Scanner) Match(expected rune) bool {
 func (s *Scanner) MatchAny(chars ...rune) bool {
 	current := s.Current()
 	for _, char := range chars {
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 		if current == char {
+========
+		if s.Ch == char {
+>>>>>>>> Stashed changes:tools/scanner.go
 			s.Take()
 			return true
 		}
@@ -183,7 +224,11 @@ func (s *Scanner) MatchString(expected string) bool {
 
 func (s *Scanner) ConsumeWhile(predicate func(rune) bool) string {
 	start := s.position
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	for !s.EOF() && predicate(s.Current()) {
+========
+	for !s.EOF() && predicate(s.Ch) {
+>>>>>>>> Stashed changes:tools/scanner.go
 		s.Take()
 	}
 	return s.input[start:s.position]
@@ -191,7 +236,11 @@ func (s *Scanner) ConsumeWhile(predicate func(rune) bool) string {
 
 func (s *Scanner) ConsumeUntil(predicate func(rune) bool) string {
 	start := s.position
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 	for !s.EOF() && !predicate(s.Current()) {
+========
+	for !s.EOF() && !predicate(s.Ch) {
+>>>>>>>> Stashed changes:tools/scanner.go
 		s.Take()
 	}
 	return s.input[start:s.position]
@@ -207,7 +256,11 @@ func (s *Scanner) ConsumeN(n int) string {
 
 func (s *Scanner) Find(target rune) bool {
 	for !s.EOF() {
+<<<<<<<< Updated upstream:htmlparser/lexer.go
 		if s.Current() == target {
+========
+		if s.Ch == target {
+>>>>>>>> Stashed changes:tools/scanner.go
 			return true
 		}
 		s.Take()
@@ -233,3 +286,22 @@ func (s *Scanner) Remaining() string {
 func (s *Scanner) Len() int {
 	return len(s.input)
 }
+<<<<<<<< Updated upstream:htmlparser/lexer.go
+========
+
+func (s *Scanner) Location() string {
+	return fmt.Sprintf("%d:%d", s.line, s.column)
+}
+
+func (s *Scanner) SetLocation(line, column int) {
+	s.line = line
+	s.column = column
+	s.updateCh()
+}
+
+func (s *Scanner) SkipWhitespace() {
+	for !s.EOF() && (s.Ch == ' ' || s.Ch == '\t' || s.Ch == '\n' || s.Ch == '\r') {
+		s.Take()
+	}
+}
+>>>>>>>> Stashed changes:tools/scanner.go
