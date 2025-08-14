@@ -3,10 +3,12 @@ package htmlparser
 import (
 	"fmt"
 	"strings"
+
+	"github.com/DilemaFixer/HtmlPuzzles/tools"
 )
 
 type HtmlParser struct {
-	customHandlers map[string]func(*Scanner) (*HtmlTag, error)
+	customHandlers map[string]func(*tools.Scanner) (*HtmlTag, error)
 }
 
 type HtmlTag struct {
@@ -34,11 +36,11 @@ type Position struct {
 
 func NewHtmlParser() *HtmlParser {
 	return &HtmlParser{
-		customHandlers: make(map[string]func(*Scanner) (*HtmlTag, error)),
+		customHandlers: make(map[string]func(*tools.Scanner) (*HtmlTag, error)),
 	}
 }
 
-func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func(*Scanner) (*HtmlTag, error)) {
+func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func(*tools.Scanner) (*HtmlTag, error)) {
 	if handler == nil || strings.TrimSpace(tagName) == "" {
 		return
 	}
@@ -46,25 +48,24 @@ func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func
 	parser.customHandlers[tagName] = handler
 }
 
-func ParseHtml(html string) (*HtmlTag, error) {
+func ParseHtml(html string) ([]*HtmlTag, error) {
 	parser := NewHtmlParser()
 	return parser.ParseHtml(html)
 }
 
-func (parser *HtmlParser) ParseHtml(html string) (*HtmlTag, error) {
-	scanner := NewScanner(html)
-	closeStack := NewStack[string]()
-	var root *HtmlTag = nil
+func (parser *HtmlParser) ParseHtml(html string) ([]*HtmlTag, error) {
+	scanner := tools.NewScanner(html)
+	closeStack := tools.NewStack[string]()
+	var roots []*HtmlTag
 	var current *HtmlTag = nil
 
 	for !scanner.EOF() {
 		scanner.SkipWhitespace()
-
 		if scanner.EOF() {
 			break
 		}
 
-		if scanner.ch == '<' {
+		if scanner.Ch == '<' {
 			if scanner.PeekNext() == '/' {
 				if closeStack.IsEmpty() {
 					return nil, fmt.Errorf("Html parsing error: superfluous closing tag at %s", scanner.Location())
@@ -82,14 +83,8 @@ func (parser *HtmlParser) ParseHtml(html string) (*HtmlTag, error) {
 					return nil, fmt.Errorf("Html parsing error: invalid closing tag '%s', expected '%s' at %s", closingTag, expected, scanner.Location())
 				}
 
-				if current != nil {
-					if current.htmlStart < htmlEndPos {
-						current.InnerHtml = strings.TrimSpace(scanner.Slice(current.htmlStart, htmlEndPos))
-					}
-				}
-
-				if current.Parent == nil {
-					return root, nil
+				if current != nil && current.htmlStart > 0 && current.htmlStart < htmlEndPos {
+					current.InnerHtml = strings.TrimSpace(scanner.Slice(current.htmlStart, htmlEndPos))
 				}
 
 				current = current.Parent
@@ -101,18 +96,16 @@ func (parser *HtmlParser) ParseHtml(html string) (*HtmlTag, error) {
 				return nil, err
 			}
 
-			if root == nil {
-				root = tag
-				current = tag
+			if current == nil {
+				roots = append(roots, tag)
+				tag.Parent = nil
 			} else {
 				tag.Parent = current
 				current.Children = append(current.Children, tag)
-				if !tag.IsSelfClosing {
-					current = tag
-				}
 			}
 
 			if !tag.IsSelfClosing {
+				current = tag
 				closeStack.Push(tag.Name)
 			}
 
@@ -132,10 +125,10 @@ func (parser *HtmlParser) ParseHtml(html string) (*HtmlTag, error) {
 		return nil, fmt.Errorf("Html parsing error: unclosed tag '%s'", unclosed)
 	}
 
-	return root, nil
+	return roots, nil
 }
 
-func parseClosingTag(scanner *Scanner) (string, error) {
+func parseClosingTag(scanner *tools.Scanner) (string, error) {
 	if !scanner.Match('<') {
 		return "", fmt.Errorf("expected '<' at %s", scanner.Location())
 	}
@@ -163,7 +156,7 @@ func parseClosingTag(scanner *Scanner) (string, error) {
 	return tagName, nil
 }
 
-func parsingOpenTag(parser *HtmlParser, scanner *Scanner) (*HtmlTag, error) {
+func parsingOpenTag(parser *HtmlParser, scanner *tools.Scanner) (*HtmlTag, error) {
 	startLine, startColumn := scanner.Line(), scanner.Column()
 	if !scanner.Match('<') {
 		return nil, fmt.Errorf("expected '<' at %s", scanner.Location())
@@ -190,12 +183,12 @@ func parsingOpenTag(parser *HtmlParser, scanner *Scanner) (*HtmlTag, error) {
 		Name:       tagName,
 		Attributes: make([]HtmlAttribute, 0),
 		Children:   make([]*HtmlTag, 0),
-		Pos:        Position{Line: scanner.line, Column: scanner.column},
+		Pos:        Position{Line: scanner.Line(), Column: scanner.Column()},
 	}
 
 	scanner.SkipWhitespace()
 
-	for !scanner.EOF() && scanner.ch != '>' && scanner.ch != '/' {
+	for !scanner.EOF() && scanner.Ch != '>' && scanner.Ch != '/' {
 		attr, err := parseAttribute(scanner)
 		if err != nil {
 			return nil, err
@@ -204,7 +197,7 @@ func parsingOpenTag(parser *HtmlParser, scanner *Scanner) (*HtmlTag, error) {
 		scanner.SkipWhitespace()
 	}
 
-	if scanner.ch == '/' {
+	if scanner.Ch == '/' {
 		scanner.Take()
 		tag.IsSelfClosing = true
 	}
@@ -218,7 +211,7 @@ func parsingOpenTag(parser *HtmlParser, scanner *Scanner) (*HtmlTag, error) {
 	return tag, nil
 }
 
-func parseAttribute(scanner *Scanner) (HtmlAttribute, error) {
+func parseAttribute(scanner *tools.Scanner) (HtmlAttribute, error) {
 	scanner.SkipWhitespace()
 
 	attrName := scanner.ConsumeWhile(func(r rune) bool {
@@ -236,14 +229,14 @@ func parseAttribute(scanner *Scanner) (HtmlAttribute, error) {
 
 	scanner.SkipWhitespace()
 
-	if scanner.ch == '=' {
+	if scanner.Ch == '=' {
 		scanner.Take()
 		scanner.SkipWhitespace()
 
 		attr.IsValueExist = true
 
-		if scanner.ch == '"' || scanner.ch == '\'' {
-			quote := scanner.ch
+		if scanner.Ch == '"' || scanner.Ch == '\'' {
+			quote := scanner.Ch
 			scanner.Take()
 
 			valueStart := scanner.Position()

@@ -1,4 +1,4 @@
-package htmlparser
+package tools
 
 type Stack[T any] struct {
 	items []T
