@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-<<<<<<< Updated upstream
 	"strings"
 
 	"golang.org/x/net/html"
