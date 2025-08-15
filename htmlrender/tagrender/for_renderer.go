@@ -55,6 +55,13 @@ type ForRenderer struct {
 	childrens []render.Renderer
 }
 
+func NewForRenderer(iterator Iterator) *ForRenderer {
+	return &ForRenderer{
+		iterator:  iterator,
+		childrens: make([]render.Renderer, 0),
+	}
+}
+
 func (f *ForRenderer) Render(ctx render.Context) (*render.RenderedNode, error) {
 	currentNode := &render.RenderedNode{
 		Childrens: make([]*render.RenderedNode, 0),

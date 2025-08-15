@@ -14,7 +14,7 @@ const (
 )
 
 type Context struct {
-	Obj          *any
+	Obj          any
 	currentLayer int
 	strings      map[string]string
 	ints         map[string]int64
@@ -24,7 +24,7 @@ type Context struct {
 	objects      map[string]any
 }
 
-func NewContext(obj *any) *Context {
+func NewContext(obj any) *Context {
 	return &Context{
 		Obj:          obj,
 		currentLayer: 0,

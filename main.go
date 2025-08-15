@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
 
-	render "github.com/DilemaFixer/HtmlPuzzles/reflection"
+	render "github.com/DilemaFixer/HtmlPuzzles/htmlrender"
+	"github.com/DilemaFixer/HtmlPuzzles/htmlrender/tagrender"
 )
 
 type One struct {
@@ -37,18 +37,15 @@ func main() {
 			},
 		},
 	}
-	path := []string{"T", "T", "F", "Four"}
-	path2 := []string{"T", "T", "F", "Dummy"}
+	path := "T.T.F.Four"
 
-	start := time.Now()
-	offset1, ptrs1, _, err1 := render.FindOffsetForField(one, path)
-	duration1 := time.Since(start)
+	ctx := render.NewContext(&one)
+	seter := tagrender.NewSetRenderer(path)
 
-	start = time.Now()
-	offset2, ptrs2, _, err2 := render.FindOffsetForField(one, path2)
-	duration2 := time.Since(start)
-
-	fmt.Printf("%v (%d, %v, %v)\n", duration1, offset1, ptrs1, err1)
-	fmt.Printf("%v (%d, %v, %v)\n", duration2, offset2, ptrs2, err2)
-	fmt.Printf("Speed bust: %.2fx\n", float64(duration1)/float64(duration2))
+	result, err := seter.Render(ctx)
+	if err != nil {
+		fmt.Println("Error rendering:", err)
+		return
+	}
+	fmt.Println("Rendered result:", result)
 }

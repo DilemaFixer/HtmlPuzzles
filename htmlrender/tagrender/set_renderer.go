@@ -20,13 +20,8 @@ func NewSetRenderer(way string) *SetRenderer {
 	}
 }
 
-func (r *SetRenderer) Render(ctx render.Context) (*render.RenderedNode, error) {
-	value, isExist := ctx.GetStringLayered(render.WayKey)
-	if !isExist {
-		return nil, fmt.Errorf("Error handling seter tag: %s key exist in current context layer", render.WayKey)
-	}
-
-	path := strings.Split(value, ".")
+func (r *SetRenderer) Render(ctx *render.Context) (*render.RenderedNode, error) {
+	path := strings.Split(r.way, ".")
 
 	offset, ptrsOffset, fieldType, err := reflection.FindOffsetForField(ctx.Obj, path)
 	if err != nil {
