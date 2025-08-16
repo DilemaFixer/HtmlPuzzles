@@ -1,11 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	render "github.com/DilemaFixer/HtmlPuzzles/htmlrender"
-	"github.com/DilemaFixer/HtmlPuzzles/htmlrender/tagrender"
-)
+import "github.com/DilemaFixer/HtmlPuzzles/htmlrender"
 
 type One struct {
 	Dummy int
@@ -27,25 +22,31 @@ type Four struct {
 	Four  int
 }
 
+var HTML string = `<div> <for iterations_count=10> <h1> <set way="T.T.F.Four"/> </h1> </for> </div>`
+
 func main() {
-	one := One{
-		T: Two{
-			T: Three{
-				F: Four{
-					Four: 42,
+	/*
+		 one := One{
+				T: Two{
+					T: Three{
+						F: Four{
+							Four: 42,
+						},
+					},
 				},
-			},
-		},
-	}
-	path := "T.T.F.Four"
+			}
+			path := "T.T.F.Four"
 
-	ctx := render.NewContext(&one)
-	seter := tagrender.NewSetRenderer(path)
+			ctx := render.NewContext(&one)
+			seter := tagrender.NewSetRenderer(path)
 
-	result, err := seter.Render(ctx)
-	if err != nil {
-		fmt.Println("Error rendering:", err)
-		return
-	}
-	fmt.Println("Rendered result:", result)
+			result, err := seter.Render(ctx)
+			if err != nil {
+				fmt.Println("Error rendering:", err)
+				return
+			}
+			fmt.Println("Rendered result:", result)
+	*/
+
+	htmlrender.ParseToRenderedNodes(HTML)
 }
