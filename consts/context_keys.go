@@ -1,4 +1,4 @@
-package htmlrender
+package consts
 
 const (
 	IterationsCountKey = "iterations_count"

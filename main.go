@@ -48,5 +48,5 @@ func main() {
 			fmt.Println("Rendered result:", result)
 	*/
 
-	htmlrender.ParseToRenderedNodes(HTML)
+	htmlrender.ParseToRendererNodes(HTML)
 }

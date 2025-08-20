@@ -6,12 +6,14 @@ import (
 	"strings"
 	"unsafe"
 
-	render "github.com/DilemaFixer/HtmlPuzzles/htmlrender"
+	html "github.com/DilemaFixer/HtmlPuzzles/htmlparser"
 	reflection "github.com/DilemaFixer/HtmlPuzzles/reflection"
+	"github.com/DilemaFixer/HtmlPuzzles/tools"
 )
 
 type SetRenderer struct {
-	way string
+	way     string
+	wrapper *html.HtmlTag
 }
 
 func NewSetRenderer(way string) *SetRenderer {
@@ -20,7 +22,7 @@ func NewSetRenderer(way string) *SetRenderer {
 	}
 }
 
-func (r *SetRenderer) Render(ctx *render.Context) (*render.RenderedNode, error) {
+func (r *SetRenderer) Render(ctx *tools.Context) (*html.HtmlTag, error) {
 	path := strings.Split(r.way, ".")
 
 	offset, ptrsOffset, fieldType, err := reflection.FindOffsetForField(ctx.Obj, path)
@@ -48,10 +50,8 @@ func (r *SetRenderer) Render(ctx *render.Context) (*render.RenderedNode, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	return &render.RenderedNode{
-		Html: str,
-	}, nil
+	_ = str
+	return nil, nil
 }
 
 func handlingPointersOnWay(obj unsafe.Pointer, ptrsOffset []uintptr) (unsafe.Pointer, error) {
@@ -137,4 +137,10 @@ func convertPointerToValue(ptr unsafe.Pointer, fieldType reflect.Type) (string, 
 	}
 }
 
-func (r *SetRenderer) AddChildren(*render.Renderer) {}
+func (r *SetRenderer) AddChildren(Renderer) {
+	panic("Try add children to set tag renderer")
+}
+
+func (r *SetRenderer) EstablishResponsibilityForRendering(html *html.HtmlTag) {
+	r.wrapper = html
+}

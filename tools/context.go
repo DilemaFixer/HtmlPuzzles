@@ -1,4 +1,4 @@
-package htmlrender
+package tools
 
 import "fmt"
 

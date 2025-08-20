@@ -3,11 +3,12 @@ package tagrender
 import (
 	"fmt"
 
-	render "github.com/DilemaFixer/HtmlPuzzles/htmlrender"
+	"github.com/DilemaFixer/HtmlPuzzles/htmlparser"
+	"github.com/DilemaFixer/HtmlPuzzles/tools"
 )
 
 type Iterator interface {
-	Init(render.Context) error
+	Init(tools.Context) error
 	IsDone() bool
 	GetI() uint64
 	Next()
@@ -18,21 +19,18 @@ type ConstantIterator struct {
 	target uint64
 }
 
-func NewConstantIterator(ctx render.Context) (Iterator, error) {
-	var value uint64
-	var isExist bool
-
-	if value, isExist = ctx.GetUintLayered(render.IterationsCountKey); !isExist {
-		return nil, fmt.Errorf("Constant iterator creating error: %s key exist in uint64 map , in layer %d", render.IterationsCountKey, ctx.GetCurrentLayer())
+func NewConstantIterator(count uint64) (Iterator, error) {
+	if count == 0 {
+		return nil, fmt.Errorf("Constant iterator creating error: count is zero")
 	}
 
 	return &ConstantIterator{
-		target: value,
+		target: count,
 		i:      0,
 	}, nil
 }
 
-func (c *ConstantIterator) Init(ctx render.Context) error {
+func (c *ConstantIterator) Init(ctx tools.Context) error {
 	return nil
 }
 
@@ -52,41 +50,25 @@ func (c *ConstantIterator) Next() {
 
 type ForRenderer struct {
 	iterator  Iterator
-	childrens []render.Renderer
+	childrens []Renderer
+	html      *htmlparser.HtmlTag
 }
 
 func NewForRenderer(iterator Iterator) *ForRenderer {
 	return &ForRenderer{
 		iterator:  iterator,
-		childrens: make([]render.Renderer, 0),
+		childrens: make([]Renderer, 0),
 	}
 }
 
-func (f *ForRenderer) Render(ctx render.Context) (*render.RenderedNode, error) {
-	currentNode := &render.RenderedNode{
-		Childrens: make([]*render.RenderedNode, 0),
-	}
-
-	if err := f.iterator.Init(ctx); err != nil {
-		return nil, err
-	}
-
-	for f.iterator.IsDone() {
-		for _, children := range f.childrens {
-			node, err := children.Render(ctx)
-
-			if err != nil {
-				return nil, err
-			}
-
-			currentNode.Childrens = append(currentNode.Childrens, node)
-		}
-		f.iterator.Next()
-	}
-
-	return currentNode, nil
+func (f *ForRenderer) Render(ctx *tools.Context) (*htmlparser.HtmlTag, error) {
+	return nil, nil
 }
 
-func (f *ForRenderer) AddChildren(children render.Renderer) {
+func (f *ForRenderer) AddChildren(children Renderer) {
 	f.childrens = append(f.childrens, children)
+}
+
+func (f *ForRenderer) EstablishResponsibilityForRendering(html *htmlparser.HtmlTag) {
+	f.html = html
 }

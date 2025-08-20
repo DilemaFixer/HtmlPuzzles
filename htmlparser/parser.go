@@ -40,6 +40,74 @@ func NewHtmlParser() *HtmlParser {
 	}
 }
 
+func (t *HtmlTag) Clone(withChildren bool) *HtmlTag {
+	if t == nil {
+		return nil
+	}
+
+	clone := &HtmlTag{
+		Name:          t.Name,
+		InnerHtml:     t.InnerHtml,
+		InnerContent:  t.InnerContent,
+		IsSelfClosing: t.IsSelfClosing,
+		Pos:           t.Pos,
+		htmlStart:     t.htmlStart,
+	}
+
+	if t.Attributes != nil {
+		clone.Attributes = make([]HtmlAttribute, len(t.Attributes))
+		copy(clone.Attributes, t.Attributes)
+	}
+
+	if t.Children != nil && withChildren {
+		clone.Children = make([]*HtmlTag, len(t.Children))
+		for i, child := range t.Children {
+			childClone := child.Clone(withChildren)
+			childClone.Parent = clone
+			clone.Children[i] = childClone
+		}
+	}
+
+	return clone
+}
+
+func (t *HtmlTag) DeepClone(targetDeep uint) *HtmlTag {
+	return t.deepClone(0, targetDeep)
+}
+
+func (t *HtmlTag) deepClone(currentLayer uint, targetDeep uint) *HtmlTag {
+	if t == nil {
+		return nil
+	}
+
+	clone := &HtmlTag{
+		Name:          t.Name,
+		InnerHtml:     t.InnerHtml,
+		InnerContent:  t.InnerContent,
+		IsSelfClosing: t.IsSelfClosing,
+		Pos:           t.Pos,
+		htmlStart:     t.htmlStart,
+	}
+
+	if t.Attributes != nil {
+		clone.Attributes = make([]HtmlAttribute, len(t.Attributes))
+		copy(clone.Attributes, t.Attributes)
+	}
+
+	if t.Children != nil && currentLayer != targetDeep {
+		clone.Children = make([]*HtmlTag, len(t.Children))
+		for i, child := range t.Children {
+			currentLayer++
+			childClone := child.deepClone(currentLayer, targetDeep)
+			currentLayer--
+			childClone.Parent = clone
+			clone.Children[i] = childClone
+		}
+	}
+
+	return clone
+}
+
 func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func(*tools.Scanner) (*HtmlTag, error)) {
 	if handler == nil || strings.TrimSpace(tagName) == "" {
 		return
