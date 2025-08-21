@@ -2,9 +2,9 @@ package render
 
 import (
 	"fmt"
-	"strings"
 
 	htmlparser "github.com/DilemaFixer/HtmlPuzzles/html"
+	"github.com/DilemaFixer/HtmlPuzzles/tags"
 )
 
 type RenderersBuilder struct {
@@ -12,11 +12,11 @@ type RenderersBuilder struct {
 }
 
 type BuilderBind struct {
-	builder   func(*htmlparser.HtmlTag) HtmlRenderer
+	builder   func(*htmlparser.HtmlTag) tags.HtmlRenderer
 	validator func(*htmlparser.HtmlTag) error
 }
 
-func NewRenderersBuilder() *RenderersBuilder {
+func NewRenderersBuilderWithDefaultSetUp() *RenderersBuilder {
 	b := &RenderersBuilder{
 		builders: make(map[string]BuilderBind),
 	}
@@ -24,11 +24,18 @@ func NewRenderersBuilder() *RenderersBuilder {
 	return b
 }
 
+func NewRenderersBuilder() *RenderersBuilder {
+	b := &RenderersBuilder{
+		builders: make(map[string]BuilderBind),
+	}
+	return b
+}
+
 func (b *RenderersBuilder) defaultSetUpForBuilder() {
 	//TODO: when base tags will be exist , add it as default
 }
 
-func (b *RenderersBuilder) Bind(target string, builder func(*htmlparser.HtmlTag) HtmlRenderer,
+func (b *RenderersBuilder) Bind(target string, builder func(*htmlparser.HtmlTag) tags.HtmlRenderer,
 	validator func(*htmlparser.HtmlTag) error) {
 
 	if target == "" || target == " " {
@@ -42,16 +49,11 @@ func (b *RenderersBuilder) Bind(target string, builder func(*htmlparser.HtmlTag)
 	b.builders[target] = BuilderBind{builder: builder, validator: validator}
 }
 
-func (b *RenderersBuilder) Build(tagName string, tag *htmlparser.HtmlTag) (HtmlRenderer, error) {
-	tagName = strings.TrimSpace(tagName)
-	if tagName == "" || tagName == " " {
-		return nil, fmt.Errorf("Renderer building error: target tag name is empyt string")
-	}
-
-	bind, exist := b.builders[tagName]
+func (b *RenderersBuilder) Build(tag *htmlparser.HtmlTag) (tags.HtmlRenderer, error) {
+	bind, exist := b.builders[tag.Name]
 
 	if !exist {
-		return nil, fmt.Errorf("Renderer building error: builder for tag %s not exst", tagName)
+		return nil, fmt.Errorf("Renderer building error: builder for tag %s not exst", tag.Name)
 	}
 
 	if err := bind.validator(tag); err != nil {
@@ -59,4 +61,9 @@ func (b *RenderersBuilder) Build(tagName string, tag *htmlparser.HtmlTag) (HtmlR
 	}
 
 	return bind.builder(tag), nil
+}
+
+func (b *RenderersBuilder) HasBuilderFor(tagName string) bool {
+	_, exist := b.builders[tagName]
+	return exist
 }
