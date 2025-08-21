@@ -2,6 +2,7 @@ package htmlparser
 
 type HtmlParser interface {
 	ParseHtml(html string) ([]*HtmlTag, error)
+	RenderHtml(tags []*HtmlTag) string
 }
 
 type HtmlTag struct {

@@ -270,3 +270,52 @@ func printHtmlTreeRecursive(tag *HtmlTag, depth int) {
 
 	fmt.Printf("</%s>\n", tag.Name)
 }
+
+func RenderHtml(tags []*HtmlTag) string {
+	var sb strings.Builder
+	for _, tag := range tags {
+		renderTag(&sb, tag, 0)
+	}
+	return sb.String()
+}
+
+func renderTag(sb *strings.Builder, tag *HtmlTag, depth int) {
+	if tag == nil {
+		return
+	}
+
+	sb.WriteString("<")
+	sb.WriteString(tag.Name)
+
+	for _, attr := range tag.Attributes {
+		if attr.IsValueExist {
+			sb.WriteString(" ")
+			sb.WriteString(attr.Name)
+			sb.WriteString("=\"")
+			sb.WriteString(attr.Value)
+			sb.WriteString("\"")
+		} else {
+			sb.WriteString(" ")
+			sb.WriteString(attr.Name)
+		}
+	}
+
+	if tag.IsSelfClosing {
+		sb.WriteString("/>")
+		return
+	}
+
+	sb.WriteString(">")
+
+	if tag.InnerContent != "" {
+		sb.WriteString(tag.InnerContent)
+	}
+
+	for _, child := range tag.Children {
+		renderTag(sb, child, depth+1)
+	}
+
+	sb.WriteString("</")
+	sb.WriteString(tag.Name)
+	sb.WriteString(">")
+}
