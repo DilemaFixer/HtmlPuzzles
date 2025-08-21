@@ -7,108 +7,17 @@ import (
 	"github.com/DilemaFixer/HtmlPuzzles/tools"
 )
 
-type HtmlParser struct {
+type DefaultHtmlParser struct {
 	customHandlers map[string]func(*tools.Scanner) (*HtmlTag, error)
 }
 
-type HtmlTag struct {
-	Name          string
-	InnerHtml     string
-	InnerContent  string
-	IsSelfClosing bool
-	Attributes    []HtmlAttribute
-	Parent        *HtmlTag
-	Children      []*HtmlTag
-	Pos           Position
-	htmlStart     int
-}
-
-type HtmlAttribute struct {
-	Name         string
-	Value        string
-	IsValueExist bool
-}
-
-type Position struct {
-	Line   int
-	Column int
-}
-
-func NewHtmlParser() *HtmlParser {
-	return &HtmlParser{
+func NewHtmlParser() *DefaultHtmlParser {
+	return &DefaultHtmlParser{
 		customHandlers: make(map[string]func(*tools.Scanner) (*HtmlTag, error)),
 	}
 }
 
-func (t *HtmlTag) Clone(withChildren bool) *HtmlTag {
-	if t == nil {
-		return nil
-	}
-
-	clone := &HtmlTag{
-		Name:          t.Name,
-		InnerHtml:     t.InnerHtml,
-		InnerContent:  t.InnerContent,
-		IsSelfClosing: t.IsSelfClosing,
-		Pos:           t.Pos,
-		htmlStart:     t.htmlStart,
-	}
-
-	if t.Attributes != nil {
-		clone.Attributes = make([]HtmlAttribute, len(t.Attributes))
-		copy(clone.Attributes, t.Attributes)
-	}
-
-	if t.Children != nil && withChildren {
-		clone.Children = make([]*HtmlTag, len(t.Children))
-		for i, child := range t.Children {
-			childClone := child.Clone(withChildren)
-			childClone.Parent = clone
-			clone.Children[i] = childClone
-		}
-	}
-
-	return clone
-}
-
-func (t *HtmlTag) DeepClone(targetDeep uint) *HtmlTag {
-	return t.deepClone(0, targetDeep)
-}
-
-func (t *HtmlTag) deepClone(currentLayer uint, targetDeep uint) *HtmlTag {
-	if t == nil {
-		return nil
-	}
-
-	clone := &HtmlTag{
-		Name:          t.Name,
-		InnerHtml:     t.InnerHtml,
-		InnerContent:  t.InnerContent,
-		IsSelfClosing: t.IsSelfClosing,
-		Pos:           t.Pos,
-		htmlStart:     t.htmlStart,
-	}
-
-	if t.Attributes != nil {
-		clone.Attributes = make([]HtmlAttribute, len(t.Attributes))
-		copy(clone.Attributes, t.Attributes)
-	}
-
-	if t.Children != nil && currentLayer != targetDeep {
-		clone.Children = make([]*HtmlTag, len(t.Children))
-		for i, child := range t.Children {
-			currentLayer++
-			childClone := child.deepClone(currentLayer, targetDeep)
-			currentLayer--
-			childClone.Parent = clone
-			clone.Children[i] = childClone
-		}
-	}
-
-	return clone
-}
-
-func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func(*tools.Scanner) (*HtmlTag, error)) {
+func (parser *DefaultHtmlParser) AddCustomAttributeHandler(tagName string, handler func(*tools.Scanner) (*HtmlTag, error)) {
 	if handler == nil || strings.TrimSpace(tagName) == "" {
 		return
 	}
@@ -116,12 +25,7 @@ func (parser *HtmlParser) AddCustomAttributeHandler(tagName string, handler func
 	parser.customHandlers[tagName] = handler
 }
 
-func ParseHtml(html string) ([]*HtmlTag, error) {
-	parser := NewHtmlParser()
-	return parser.ParseHtml(html)
-}
-
-func (parser *HtmlParser) ParseHtml(html string) ([]*HtmlTag, error) {
+func (parser *DefaultHtmlParser) ParseHtml(html string) ([]*HtmlTag, error) {
 	scanner := tools.NewScanner(html)
 	closeStack := tools.NewStack[string]()
 	var roots []*HtmlTag
@@ -224,7 +128,7 @@ func parseClosingTag(scanner *tools.Scanner) (string, error) {
 	return tagName, nil
 }
 
-func parsingOpenTag(parser *HtmlParser, scanner *tools.Scanner) (*HtmlTag, error) {
+func parsingOpenTag(parser *DefaultHtmlParser, scanner *tools.Scanner) (*HtmlTag, error) {
 	startLine, startColumn := scanner.Line(), scanner.Column()
 	if !scanner.Match('<') {
 		return nil, fmt.Errorf("expected '<' at %s", scanner.Location())
