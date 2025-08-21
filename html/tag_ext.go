@@ -73,3 +73,19 @@ func (t *HtmlTag) clone(currentLayer, targetDepth int) *HtmlTag {
 
 	return clone
 }
+
+func (t *HtmlTag) RemoveChild(child *HtmlTag) {
+	if t == nil || child == nil || len(t.Children) == 0 {
+		return
+	}
+
+	newChildren := make([]*HtmlTag, 0, len(t.Children))
+	for _, c := range t.Children {
+		if c != child {
+			newChildren = append(newChildren, c)
+		} else {
+			c.Parent = nil
+		}
+	}
+	t.Children = newChildren
+}
