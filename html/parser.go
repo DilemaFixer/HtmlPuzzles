@@ -271,7 +271,7 @@ func printHtmlTreeRecursive(tag *HtmlTag, depth int) {
 	fmt.Printf("</%s>\n", tag.Name)
 }
 
-func RenderHtml(tags []*HtmlTag) string {
+func (parser *DefaultHtmlParser) RenderHtml(tags []*HtmlTag) string {
 	var sb strings.Builder
 	for _, tag := range tags {
 		renderTag(&sb, tag, 0)

@@ -2,6 +2,9 @@ package htmlparser
 
 type HtmlParser interface {
 	ParseHtml(html string) ([]*HtmlTag, error)
+}
+
+type HtmlSerializer interface {
 	RenderHtml(tags []*HtmlTag) string
 }
 
