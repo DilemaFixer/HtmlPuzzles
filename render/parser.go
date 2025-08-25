@@ -2,128 +2,110 @@ package render
 
 import (
 	"fmt"
+	"strings"
 
-	htmlparser "github.com/DilemaFixer/HtmlPuzzles/html"
-	"github.com/DilemaFixer/HtmlPuzzles/tags"
+	htmlparser "github.com/DilemaFixer/HtmlParser"
 )
 
-type RendererParser func(*htmlparser.HtmlTag)
+type TagParser func(*htmlparser.HtmlTag) (RenderNode, error)
+type HtmlValidator func(*htmlparser.HtmlTag) error
 
-type RenderersParser struct {
-	binds   map[string]RendererParser
-	builder *RenderersBuilder
+type TagsRenderer struct {
+	binds map[string]TagsParserBind
 }
 
-func NewRenderersParser() *RenderersParser {
-	return &RenderersParser{
-		binds:   make(map[string]RendererParser),
-		builder: NewRenderersBuilderWithDefaultSetUp(),
+type TagsParserBind struct {
+	validator HtmlValidator
+	parser    TagParser
+}
+
+func NewTagsRenderer() *TagsRenderer {
+	return &TagsRenderer{
+		binds: make(map[string]TagsParserBind),
 	}
 }
 
-func NewRederersParserWithDefaultSetUp() *RenderersParser {
-	p := &RenderersParser{
-		binds:   make(map[string]RendererParser),
-		builder: NewRenderersBuilderWithDefaultSetUp(),
-	}
-	p.defaultSetUpForParser()
-	return p
-}
-
-func (rp *RenderersParser) defaultSetUpForParser() {
-	//TODO: when base tags will be exist , add it as default
-}
-
-func (rp *RenderersParser) SetCustomBuilder(builder *RenderersBuilder) {
-	if builder == nil {
+func (p *TagsRenderer) Bind(key string, parser TagParser, validator HtmlValidator) {
+	key = strings.TrimSpace(key)
+	if key == "" {
 		return
 	}
 
-	rp.builder = builder
+	if parser == nil || validator == nil {
+		return
+	}
+
+	p.binds[key] = TagsParserBind{
+		validator: validator,
+		parser:    parser,
+	}
 }
 
-func (rp *RenderersParser) Bind(target string, parser RendererParser) {
-	rp.binds[target] = parser
-}
-
-func (rp *RenderersParser) HasParserFor(tag string) bool {
-	_, exist := rp.binds[tag]
+func (p *TagsRenderer) HasBindFor(key string) bool {
+	_, exist := p.binds[key]
 	return exist
 }
 
-func (rp *RenderersParser) Parse(tag *htmlparser.HtmlTag) error {
-	if !rp.HasParserFor(tag.Name) {
-		return fmt.Errorf("Parser for html tag %s not exist in bindings", tag.Name)
+func (p *TagsRenderer) tryRender(htmlNode *htmlparser.HtmlTag) (RenderNode, error) {
+	if !p.HasBindFor(htmlNode.Name) {
+		return nil, fmt.Errorf("parser for tag '%s' not exist", htmlNode.Name)
 	}
 
-	parser := rp.binds[tag.Name]
-	parser(tag)
-	return nil
+	bind := p.binds[htmlNode.Name]
+	if err := bind.validator(htmlNode); err != nil {
+		return nil, err
+	}
+
+	render, err := bind.parser(htmlNode)
+	if err != nil {
+		return nil, err
+	}
+
+	return render, nil
 }
 
-func (rp *RenderersParser) ParseHtmlToRenderTree(htmlASTs []*htmlparser.HtmlTag) ([]tags.HtmlRenderer, error) {
-	if len(htmlASTs) == 0 {
-		return nil, fmt.Errorf("Html to render tree parsing error: input html slice is empty or nil")
+func (p *TagsRenderer) HtmlToRenderTree(htmlNodes []*htmlparser.HtmlTag) ([]RenderNode, error) {
+	if len(htmlNodes) == 0 {
+		return nil, fmt.Errorf("Html to render tree parsing error: input is nil or empyt slice")
 	}
 
-	result := make([]tags.HtmlRenderer, 0, len(htmlASTs))
-
-	for i, htmlAST := range htmlASTs {
-		if htmlAST == nil {
-			return nil, fmt.Errorf("Html to render tree parsing error: item in pos %d is nil ptr", i)
-		}
-		rendererBranch, err := rp.parseHtmlAstToRendererTree(htmlAST)
-
+	renderNodes := make([]RenderNode, 0, len(htmlNodes))
+	for _, htmlNode := range htmlNodes {
+		renderBranch, err := p.parseHtml(htmlNode)
 		if err != nil {
-			return nil, fmt.Errorf("Html to render tree parsing error: %s", err.Error())
+			return nil, fmt.Errorf("Html to render tree parsing error: %w", err)
 		}
-
-		result = append(result, rendererBranch)
+		renderNodes = append(renderNodes, renderBranch)
 	}
 
-	return result, nil
+	return renderNodes, nil
 }
 
-func (rp *RenderersParser) parseHtmlAstToRendererTree(htmlAst *htmlparser.HtmlTag) (tags.HtmlRenderer, error) {
-	if rp.HasParserFor(htmlAst.Name) {
-		err := rp.Parse(htmlAst)
+func (p *TagsRenderer) parseHtml(htmlNode *htmlparser.HtmlTag) (RenderNode, error) {
+	if p.HasBindFor(htmlNode.Name) {
+		renderer, err := p.tryRender(htmlNode)
 		if err != nil {
 			return nil, err
 		}
 
-		renderer, err := rp.builder.Build(htmlAst)
-		if err != nil {
-			return nil, err
-		}
-
-		renderer.AddHtml(htmlAst.Children)
-
-		if len(htmlAst.Children) > 0 {
-			for _, children := range htmlAst.Children {
-				childrenRenderer, err := rp.parseHtmlAstToRendererTree(children)
-				if err != nil {
-					return nil, err
-				}
-
-				renderer.AddChildren(childrenRenderer)
+		for _, htmlChildren := range htmlNode.Children {
+			childrenRenderer, err := p.parseHtml(htmlChildren)
+			if err != nil {
+				return nil, err
 			}
+			renderer.AddChildren(childrenRenderer)
 		}
 		return renderer, nil
 	}
 
-	if len(htmlAst.Children) > 0 {
-		group := tags.NewGroupRenderer()
-		for _, child := range htmlAst.Children {
-			childRenderer, err := rp.parseHtmlAstToRendererTree(child)
-			if err != nil {
-				return nil, err
-			}
-			if childRenderer != nil {
-				group.AddChildren(childRenderer)
-			}
-		}
-		return group, nil
-	}
+	hNode := NewHostNode(htmlNode)
 
-	return tags.NewEmptyRenderer(), nil
+	for _, htmlChildren := range htmlNode.Children {
+		childrenRenderer, err := p.parseHtml(htmlChildren)
+		if err != nil {
+			return nil, err
+		}
+		hNode.AddChildren(childrenRenderer)
+	}
+	return hNode, nil
 }

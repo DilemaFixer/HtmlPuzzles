@@ -14,7 +14,6 @@ const (
 )
 
 type Context struct {
-	Obj          any
 	currentLayer int
 	strings      map[string]string
 	ints         map[string]int64
@@ -24,9 +23,8 @@ type Context struct {
 	objects      map[string]any
 }
 
-func NewContext(obj any) *Context {
+func NewContext() *Context {
 	return &Context{
-		Obj:          obj,
 		currentLayer: 0,
 		strings:      make(map[string]string),
 		ints:         make(map[string]int64),
@@ -35,6 +33,14 @@ func NewContext(obj any) *Context {
 		bools:        make(map[string]bool),
 		objects:      make(map[string]any),
 	}
+}
+
+func (c *Context) LayerUp() {
+	c.currentLayer++
+}
+
+func (c *Context) LayerDown() {
+	c.currentLayer--
 }
 
 func (c *Context) SetCurrentLayer(layer int) {
