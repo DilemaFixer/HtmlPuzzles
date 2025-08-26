@@ -1,3 +1,6 @@
+> [!WARNING]
+> The library is not in contributions ready state yet , test not exist
+
 # HtmlPuzzles
 
 **HtmlPuzzles** is an experimental Go library for creating custom HTML components with a custom render pipeline. This project was created for educational purposes to study HTML parsing, DSL creation, and architectural patterns.
