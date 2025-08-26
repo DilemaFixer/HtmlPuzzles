@@ -14,7 +14,6 @@ The library allows you to:
 
 ```bash
 go get github.com/DilemaFixer/HtmlPuzzles
-// then
 go get github.com/DilemaFixer/HtmlParser
 ```
 
