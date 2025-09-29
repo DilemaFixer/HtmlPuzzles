@@ -17,7 +17,6 @@ The library allows you to:
 
 ```bash
 go get github.com/DilemaFixer/HtmlPuzzles
-go get github.com/DilemaFixer/HtmlParser
 ```
 
 ## 🏗️ Architecture
