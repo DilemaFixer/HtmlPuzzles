@@ -1,6 +1,10 @@
 package render
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"sync"
+)
 
 type ValueType int
 
@@ -14,25 +18,41 @@ const (
 )
 
 type Context struct {
-	currentLayer int
-	strings      map[string]string
-	ints         map[string]int64
-	uints        map[string]uint64
-	floats       map[string]float64
-	bools        map[string]bool
-	objects      map[string]any
+	context.Context
+	mainWG           *sync.WaitGroup
+	templateRootPath string
+	currentLayer     int
+	strings          map[string]string
+	ints             map[string]int64
+	uints            map[string]uint64
+	floats           map[string]float64
+	bools            map[string]bool
+	objects          map[string]any
 }
 
-func NewContext() *Context {
+func NewContext(templateRoot string) *Context {
 	return &Context{
-		currentLayer: 0,
-		strings:      make(map[string]string),
-		ints:         make(map[string]int64),
-		uints:        make(map[string]uint64),
-		floats:       make(map[string]float64),
-		bools:        make(map[string]bool),
-		objects:      make(map[string]any),
+		Context:          context.Background(),
+		mainWG:           &sync.WaitGroup{},
+		templateRootPath: templateRoot,
+		strings:          make(map[string]string),
+		ints:             make(map[string]int64),
+		uints:            make(map[string]uint64),
+		floats:           make(map[string]float64),
+		bools:            make(map[string]bool),
+		objects:          make(map[string]any),
 	}
+}
+func (c *Context) Go(fn func()) {
+	c.mainWG.Add(1)
+	go func() {
+		defer c.mainWG.Done()
+		fn()
+	}()
+}
+
+func (c *Context) WaitAll() {
+	c.mainWG.Wait()
 }
 
 func (c *Context) LayerUp() {
