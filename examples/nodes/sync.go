@@ -2,6 +2,7 @@ package nodes
 
 import (
 	render "github.com/DilemaFixer/HtmlPuzzles/render"
+	"github.com/DilemaFixer/HtmlPuzzles/utils"
 )
 
 type SyncNode struct {
@@ -15,7 +16,7 @@ func NewSyncNode(childrenCount uint64) render.Node {
 }
 
 func (s *SyncNode) Render(ctx *render.Context) (render.RenderResult, error) {
-	fut := render.NewFuture[render.RenderResult]()
+	fut := utils.NewFuture[render.RenderResult]()
 
 	ctx.Go(func() {
 		composite := render.CompositeResult{}
