@@ -18,3 +18,5 @@ The library allows you to:
 ```bash
 go get github.com/DilemaFixer/HtmlPuzzles
 ```
+
+For more details chack [wiki page](https://github.com/DilemaFixer/HtmlPuzzles/wiki)
