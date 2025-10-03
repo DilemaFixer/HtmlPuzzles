@@ -1,5 +1,7 @@
 package render
 
+import "github.com/DilemaFixer/HtmlPuzzles/utils"
+
 type RenderResult interface {
 	ToNodes() (HtmlNodes, error)
 }
@@ -49,7 +51,7 @@ func (r HostResult) ToNodes() (HtmlNodes, error) {
 }
 
 type AsyncResult struct {
-	Future *Future[RenderResult]
+	Future *utils.Future[RenderResult]
 }
 
 func (r AsyncResult) ToNodes() (HtmlNodes, error) {
