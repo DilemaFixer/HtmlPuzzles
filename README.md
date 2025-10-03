@@ -43,8 +43,8 @@ go get github.com/DilemaFixer/HtmlPuzzles
 package main
 
 import (
-    "fmt"
-    "github.com/DilemaFixer/HtmlPuzzles/render"
+	"fmt"
+	"github.com/DilemaFixer/HtmlPuzzles/examples/render"
 )
 
 const HTML = `
@@ -55,16 +55,16 @@ const HTML = `
 </div>`
 
 func main() {
-    renderer := render.NewTagsRenderer()
-    renderer.Bind("for", forParser, forValidator)
-    
-    result, err := renderer.RenderHtml(HTML)
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Println(result)
-    // Output: <div><h1>Hello World!</h1><h1>Hello World!</h1><h1>Hello World!</h1></div>
+	renderer := render.NewTagsRenderer()
+	renderer.Bind("for", forParser, forValidator)
+
+	result, err := renderer.RenderHtml(HTML)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(result)
+	// Output: <div><h1>Hello World!</h1><h1>Hello World!</h1><h1>Hello World!</h1></div>
 }
 ```
 
@@ -147,98 +147,98 @@ renderer.Bind("custom", customParser, customValidator)
 package main
 
 import (
-    "fmt"
-    htmlparser "github.com/DilemaFixer/HtmlParser"
-    "github.com/DilemaFixer/HtmlPuzzles/render"
-    "github.com/DilemaFixer/HtmlPuzzles/tools"
+	"fmt"
+	htmlparser "github.com/DilemaFixer/HtmlParser"
+	"github.com/DilemaFixer/HtmlPuzzles/examples/render"
+	"github.com/DilemaFixer/HtmlPuzzles/tools"
 )
 
 const (
-    for_keyword        = "for"
-    IterationsCountKey = "iterations_count"
+	for_keyword        = "for"
+	IterationsCountKey = "iterations_count"
 )
 
 // Node for loop
 type ForNode struct {
-    count     uint64
-    childrens []render.RenderNode
+	count     uint64
+	childrens []render.RenderNode
 }
 
 func NewForNode(count uint64) *ForNode {
-    return &ForNode{
-        count:     count,
-        childrens: make([]render.RenderNode, 0),
-    }
+	return &ForNode{
+		count:     count,
+		childrens: make([]render.RenderNode, 0),
+	}
 }
 
 func (fNode *ForNode) Render(ctx *tools.Context) ([]*htmlparser.HtmlTag, error) {
-    ctx.LayerUp()
-    defer ctx.LayerDown()
-    
-    result := make([]*htmlparser.HtmlTag, 0)
+	ctx.LayerUp()
+	defer ctx.LayerDown()
 
-    // execute loop
-    for i := 0; i < int(fNode.count); i++ {
-        // can add iteration variable to context
-        ctx.SetIntLayered("index", int64(i))
-        
-        for _, children := range fNode.childrens {
-            childrenHtml, err := children.Render(ctx)
-            if err != nil {
-                return nil, err
-            }
-            result = append(result, childrenHtml...)
-        }
-    }
+	result := make([]*htmlparser.HtmlTag, 0)
 
-    return result, nil
+	// execute loop
+	for i := 0; i < int(fNode.count); i++ {
+		// can add iteration variable to context
+		ctx.SetIntLayered("index", int64(i))
+
+		for _, children := range fNode.childrens {
+			childrenHtml, err := children.Render(ctx)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, childrenHtml...)
+		}
+	}
+
+	return result, nil
 }
 
 func (fNode *ForNode) AddChildren(node render.RenderNode) {
-    if node != nil {
-        fNode.childrens = append(fNode.childrens, node)
-    }
+	if node != nil {
+		fNode.childrens = append(fNode.childrens, node)
+	}
 }
 
 // Validator
 func forValidator(htmlNode *htmlparser.HtmlTag) error {
-    if !htmlNode.HasAttribute(IterationsCountKey) {
-        return fmt.Errorf("tag %s must contain %s attribute", 
-            htmlNode.Name, IterationsCountKey)
-    }
-    return nil
+	if !htmlNode.HasAttribute(IterationsCountKey) {
+		return fmt.Errorf("tag %s must contain %s attribute",
+			htmlNode.Name, IterationsCountKey)
+	}
+	return nil
 }
 
 // Parser
 func forParser(htmlNode *htmlparser.HtmlTag) (render.RenderNode, error) {
-    attr := htmlNode.GetAttribute(IterationsCountKey)
-    attrValue, err := attr.AsUint64()
-    if err != nil {
-        return nil, err
-    }
+	attr := htmlNode.GetAttribute(IterationsCountKey)
+	attrValue, err := attr.AsUint64()
+	if err != nil {
+		return nil, err
+	}
 
-    return NewForNode(attrValue), nil
+	return NewForNode(attrValue), nil
 }
 
 // Usage
 func main() {
-    const HTML = `
+	const HTML = `
     <div>
         <for iterations_count=3>
             <p>Iteration</p>
         </for>
     </div>`
 
-    renderer := render.NewTagsRenderer()
-    renderer.Bind(for_keyword, forParser, forValidator)
-    
-    htmlAsString, err := renderer.RenderHtml(HTML)
-    if err != nil {
-        fmt.Printf("Error: %s", err.Error())
-        return
-    }
-    
-    fmt.Println(htmlAsString)
+	renderer := render.NewTagsRenderer()
+	renderer.Bind(for_keyword, forParser, forValidator)
+
+	htmlAsString, err := renderer.RenderHtml(HTML)
+	if err != nil {
+		fmt.Printf("Error: %s", err.Error())
+		return
+	}
+
+	fmt.Println(htmlAsString)
 }
 ```
 

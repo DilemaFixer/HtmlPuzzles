@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"github.com/DilemaFixer/HtmlPuzzles/utils"
 )
 
 type ValueType int
@@ -19,6 +21,8 @@ const (
 
 type Context struct {
 	context.Context
+	Builder          *TreeBuilder
+	Offset           *utils.PathCache
 	mainWG           *sync.WaitGroup
 	templateRootPath string
 	currentLayer     int
@@ -30,9 +34,11 @@ type Context struct {
 	objects          map[string]any
 }
 
-func NewContext(templateRoot string) *Context {
+func NewContext(treeBuilder *TreeBuilder, templateRoot string) *Context {
 	return &Context{
 		Context:          context.Background(),
+		Builder:          treeBuilder,
+		Offset:           utils.NewPathCache(),
 		mainWG:           &sync.WaitGroup{},
 		templateRootPath: templateRoot,
 		strings:          make(map[string]string),
@@ -53,6 +59,10 @@ func (c *Context) Go(fn func()) {
 
 func (c *Context) WaitAll() {
 	c.mainWG.Wait()
+}
+
+func (c *Context) GetTemplateRoot() string {
+	return c.templateRootPath
 }
 
 func (c *Context) LayerUp() {

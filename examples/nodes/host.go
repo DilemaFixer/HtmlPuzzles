@@ -1,6 +1,8 @@
 package nodes
 
-import "github.com/DilemaFixer/HtmlPuzzles/render"
+import (
+	render "github.com/DilemaFixer/HtmlPuzzles/render"
+)
 
 type HostNode struct {
 	children []render.Node
@@ -14,23 +16,24 @@ func NewHostNode(hosted *render.HtmlNode, childrenCount uint64) render.Node {
 	}
 }
 
-func (h *HostNode) Render(ctx *render.Context) (render.HtmlNodes, error) {
+func (h *HostNode) Render(ctx *render.Context) (render.RenderResult, error) {
 	ctx.LayerUp()
-	hCopy, err := h.hosted.CloneDown(1)
-	if err != nil {
-		return nil, err
-	}
+	defer ctx.LayerDown()
 
-	hCopy.Children = make(render.HtmlNodes, 0, len(h.children))
+	composite := render.CompositeResult{}
+
 	for _, child := range h.children {
-		subNodes, err := child.Render(ctx)
+		res, err := child.Render(ctx)
 		if err != nil {
 			return nil, err
 		}
-		hCopy.Children = append(hCopy.Children, subNodes...)
+		composite.Children = append(composite.Children, res)
 	}
-	ctx.LayerDown()
-	return render.HtmlNodes{hCopy}, nil
+
+	return render.HostResult{
+		Host:     h.hosted,
+		Children: composite,
+	}, nil
 }
 
 func (h *HostNode) AddChildren(node render.Node) {

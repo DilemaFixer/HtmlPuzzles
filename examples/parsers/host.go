@@ -1,7 +1,7 @@
 package parsers
 
 import (
-	"github.com/DilemaFixer/HtmlPuzzles/nodes"
+	"github.com/DilemaFixer/HtmlPuzzles/examples/nodes"
 	"github.com/DilemaFixer/HtmlPuzzles/render"
 )
 

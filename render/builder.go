@@ -85,7 +85,6 @@ func (builder *TreeBuilder) parseNodeFromDefault(source *HtmlNode) (Node, error)
 }
 
 func (builder *TreeBuilder) parseChildren(parent Node, sourceBranch *HtmlNode) error {
-	fmt.Printf("tag=%s children=%d\n", sourceBranch.Name, len(sourceBranch.Children))
 	for _, subBranche := range sourceBranch.Children {
 		subNode, err := builder.BuildBranch(subBranche)
 		if err != nil {
