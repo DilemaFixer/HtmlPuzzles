@@ -31,7 +31,7 @@ Input html :
 <!-- <wrapper> - using as templ for html tag -->
 <!-- 'wrapped' attrebute requared always -->
 <!-- all attrebutes will be move to tag that describe in wrapped -->
-<!-- if attrebute start with ':" prefix, value will be geting from runtime context , you can describe way to prop -->
+<!-- if attrebute start with ':' prefix, value will be geting from runtime context , you can describe way to prop -->
 <!-- :src="user.AvatarUrl|string" -> src="path/to/img/from/prop" -->
 <div>
     <sync>
